@@ -1,9 +1,11 @@
 package hyunj0.c4q.nyc.fuzzcodingchallenge;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -24,14 +26,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
     ListView content_list;
     ContentAdapter adapter;
 
     List<Content> contents;
+    List<Content> filteredContents;
 
     ParseJSONTask parseJSONTask;
+
+    SharedPreferences preferences;
+    int preferredContent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +46,10 @@ public class MainActivity extends AppCompatActivity {
         content_list = (ListView) findViewById(R.id.content_list);
 
         contents = new ArrayList<>();
+        filteredContents = new ArrayList<>();
+
+        preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        preferences.registerOnSharedPreferenceChangeListener(this);
 
         parseJSONTask = new ParseJSONTask();
         parseJSONTask.execute();
@@ -63,6 +73,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        preferences.unregisterOnSharedPreferenceChangeListener(this);
     }
 
     public class ParseJSONTask extends AsyncTask<Void, Void, List<Content>> {
@@ -124,9 +140,53 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(List<Content> contents) {
             super.onPostExecute(contents);
-            adapter = new ContentAdapter(getApplicationContext(), R.layout.content_row_item, contents);
+            preferredContent = Integer.parseInt(preferences.getString("filterType", "4"));
+            filteredContents = filteredContent(contents, preferredContent);
+            adapter = new ContentAdapter(getApplicationContext(), R.layout.content_row_item, filteredContents);
             content_list.setAdapter(adapter);
         }
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        preferredContent = Integer.parseInt(preferences.getString("filterType", "4"));
+        refreshContent(preferredContent);
+    }
+
+    public List<Content> filteredContent(List<Content> contents, int preferredContent) {
+        switch (preferredContent) {
+            case 1:
+                for (Content content : contents) {
+                    if (content.getType().equalsIgnoreCase("text")) {
+                        filteredContents.add(content);
+                    }
+                }
+                break;
+            case 2:
+                for (Content content : contents) {
+                    if (content.getType().equalsIgnoreCase("image")) {
+                        filteredContents.add(content);
+                    }
+                }
+                break;
+            case 3:
+                for (Content content : contents) {
+                    if (content.getType().equalsIgnoreCase("other")) {
+                        filteredContents.add(content);
+                    }
+                }
+                break;
+            case 4:
+                filteredContents.addAll(contents);
+                break;
+        }
+        return filteredContents;
+    }
+
+    public void refreshContent(int preferredContent) {
+        filteredContents.clear();
+        filteredContent(contents, preferredContent);
+        adapter.notifyDataSetChanged();
     }
 
     @Override
@@ -145,6 +205,7 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
             return true;
         }
 

@@ -1,17 +1,108 @@
 package hyunj0.c4q.nyc.fuzzcodingchallenge;
 
-import android.support.v7.app.ActionBarActivity;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ListView;
 
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
-public class MainActivity extends ActionBarActivity {
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+
+    ListView content_list;
+    ContentAdapter adapter;
+
+    List<Content> contents;
+
+    ParseJSONTask parseJSONTask;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        content_list = (ListView) findViewById(R.id.content_list);
+
+        contents = new ArrayList<>();
+
+        parseJSONTask = new ParseJSONTask();
+        parseJSONTask.execute();
+    }
+
+    public class ParseJSONTask extends AsyncTask<Void, Void, List<Content>> {
+
+        OkHttpClient client = new OkHttpClient();
+
+        String run(String url) throws IOException {
+            Request request = new Request.Builder().url(url).build();
+            Response response = client.newCall(request).execute();
+            return response.body().string();
+        }
+
+        @Override
+        protected List<Content> doInBackground(Void... voids) {
+            String endpoint = "http://quizzes.fuzzstaging.com/quizzes/mobile/1/data.json";
+            try {
+                JSONArray jsonArray = new JSONArray(run(endpoint));
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+                    Content content = new Content();
+
+                    if (jsonObject.isNull("id")) {
+                        content.setId("N/A");
+                    } else {
+                        content.setId(jsonObject.getString("id"));
+                    }
+
+                    if (jsonObject.isNull("type")) {
+                        content.setType("N/A");
+                    } else {
+                        content.setType(jsonObject.getString("type"));
+                    }
+
+                    if (jsonObject.isNull("date")) {
+                        content.setDate("N/A");
+                    } else {
+                        content.setDate(jsonObject.getString("date"));
+                    }
+
+                    if (jsonObject.isNull("data")) {
+                        content.setData("N/A");
+                    } else {
+                        content.setData(jsonObject.getString("data"));
+                    }
+
+                    Log.d("content parsed", content.toString());
+
+                    contents.add(content);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            return contents;
+        }
+
+        @Override
+        protected void onPostExecute(List<Content> contents) {
+            super.onPostExecute(contents);
+            adapter = new ContentAdapter(getApplicationContext(), R.layout.content_row_item, contents);
+            content_list.setAdapter(adapter);
+        }
     }
 
 

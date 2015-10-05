@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         content_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                Content contentClicked = contents.get(i);
+                Content contentClicked = filteredContents.get(i);
                 if (contentClicked.getType().equalsIgnoreCase("text")) {
                     Uri uri = (Uri.parse("https://fuzzproductions.com/"));
                     Intent intent = new Intent(Intent.ACTION_VIEW, uri);

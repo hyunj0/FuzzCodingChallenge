@@ -1,11 +1,15 @@
 package hyunj0.c4q.nyc.fuzzcodingchallenge;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.squareup.okhttp.OkHttpClient;
@@ -39,6 +43,26 @@ public class MainActivity extends AppCompatActivity {
 
         parseJSONTask = new ParseJSONTask();
         parseJSONTask.execute();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        content_list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                Content contentClicked = contents.get(i);
+                if (contentClicked.getType().equalsIgnoreCase("text")) {
+                    Uri uri = (Uri.parse("https://fuzzproductions.com/"));
+                    Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                    startActivity(intent);
+                } else if (contentClicked.getType().equalsIgnoreCase("image")) {
+                    Intent intent = new Intent(getApplicationContext(), ImageActivity.class);
+                    intent.putExtra("image", contentClicked.getData());
+                    startActivity(intent);
+                }
+            }
+        });
     }
 
     public class ParseJSONTask extends AsyncTask<Void, Void, List<Content>> {
@@ -104,7 +128,6 @@ public class MainActivity extends AppCompatActivity {
             content_list.setAdapter(adapter);
         }
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
